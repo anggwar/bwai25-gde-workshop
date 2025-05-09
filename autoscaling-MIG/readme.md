@@ -1,5 +1,5 @@
 # Hands-On Workshop: GCP MIG Autoscaling with HTTP Load Balancer
-*Last updated: May 6, 2025*
+*Last updated: May 9, 2025*
 
 *Event: Cloud Roadshow x Build With AI 2025*
 
@@ -229,6 +229,20 @@ Now, use the instance template to create a group of identical instances that can
         * Configure **Check interval**, **Timeout**, **Healthy threshold**, and **Unhealthy threshold** (defaults are usually suitable for a demo).
         * **Save and continue**.
 4.  **Create** the MIG. Wait for the initial instance(s) to be created, run the startup script, and become healthy according to the health check. This might take a few minutes.
+5.  after creating health check, use below command to create a firewall rule, and reserve ip:
+```
+# Allow health check + HTTP traffic (ports 80 from Google IP ranges)
+gcloud compute firewall-rules create allow-health-check-and-http \
+    --allow tcp:80 \
+    --target-tags=http-server \
+    --source-ranges=130.211.0.0/22,35.191.0.0/16 \
+    --description="Allow HTTP and Google Cloud health checks"
+
+# Optional: Reserve a global static IP for the Load Balancer
+gcloud compute addresses create lb-ipv4 \
+    --ip-version=IPV4 \
+    --global
+```
 
 ## 5. Create HTTP Load Balancer
 
@@ -272,18 +286,11 @@ Set up an external HTTP Load Balancer to distribute traffic evenly across the he
 Now, let's generate sufficient traffic to trigger the autoscaling policy based on CPU utilization.
 
 1.  **Identify the Load Balancer's External IP:** Use the IP address noted during the frontend configuration.
-2.  **Use a load testing tool:** You can run these commands from cloudshell
+2.  **Use a load testing tool:** You can run commands from cloudshell
 
-    * **Using `hey`:** (Install via `go install go.uber.org/hey` or package manager). This command sends traffic for 2 minutes (`-z 2m`) with 50 concurrent connections (`-c 50`). Adjust duration/concurrency as needed.
-        ```bash
-        hey -z 2m -c 50 http://<LB-EXTERNAL-IP>
+    * **Using ApacheBench (`ab`):** Example: 1000 total requests (`-n`), 50 concurrent (`-c`).
         ```
-    * **Using `curl` in a loop:** This generates continuous requests. Use `Ctrl+C` to stop. The `grep` filters for the server name, and `sleep` adds a small delay.
-        ```bash
-        while true; do curl -s http://<LB-EXTERNAL-IP> | grep Served; sleep 0.1; done
-        ```
-    * **Using ApacheBench (`ab`):** (Often pre-installed or available via `apache2-utils`). Example: 1000 total requests (`-n`), 50 concurrent (`-c`).
-        ```bash
+        sudo apt-get install apache2-utils -y
         ab -n 1000 -c 50 http://<LB-EXTERNAL-IP>/
         ```
 4.  **Monitor Scaling Activity:**
