@@ -239,10 +239,14 @@ gcloud compute firewall-rules create allow-health-check-and-http \
     --source-ranges=130.211.0.0/22,35.191.0.0/16 \
     --description="Allow HTTP and Google Cloud health checks"
 
-# Optional: Reserve a global static IP for the Load Balancer
 gcloud compute addresses create lb-ipv4 \
     --ip-version=IPV4 \
     --global
+
+gcloud compute instance-groups set-named-ports webserver-mig \
+  --named-ports=http:80 \
+  --zone=us-central1-c
+
 ```
 
 ## 5. Create HTTP Load Balancer
