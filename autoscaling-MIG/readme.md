@@ -200,6 +200,7 @@ echo "Welcome to AutoScaling Demo - $(hostname)" > /var/www/html/index.html
 sudo systemctl start apache2
 sudo systemctl enable apache2
 ```
+4.  **network tags** allow-lb
 4.  **Create** the instance template.
 
 ## 4. Create Managed Instance Group (MIG)
